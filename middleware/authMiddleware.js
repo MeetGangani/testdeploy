@@ -3,26 +3,24 @@ import asyncHandler from 'express-async-handler';
 import User from '../models/userModel.js';
 
 const protect = asyncHandler(async (req, res, next) => {
-  console.log('Cookies received:', req.cookies);
   let token = req.cookies.jwt;
 
   if (!token) {
-    console.log('No token found in cookies');
     res.status(401);
     throw new Error('Not authorized, please log in again');
   }
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    console.log('Token verified, user ID:', decoded.userId);
-
-    req.user = await User.findById(decoded.userId).select('-password');
     
-    if (!req.user) {
+    const user = await User.findById(decoded.userId).select('-password');
+    
+    if (!user) {
       res.status(401);
       throw new Error('User not found');
     }
-    
+
+    req.user = user;
     next();
   } catch (error) {
     console.error('Token verification failed:', error);
