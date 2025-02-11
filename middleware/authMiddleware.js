@@ -3,7 +3,18 @@ import asyncHandler from 'express-async-handler';
 import User from '../models/userModel.js';
 
 const protect = asyncHandler(async (req, res, next) => {
-  let token = req.cookies.jwt;
+  let token;
+  
+  console.log('Cookies:', req.cookies);
+  token = req.cookies.jwt;
+
+  if (!token) {
+    // Also check Authorization header as fallback
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      token = authHeader.split(' ')[1];
+    }
+  }
 
   if (!token) {
     res.status(401);
@@ -12,7 +23,6 @@ const protect = asyncHandler(async (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    
     const user = await User.findById(decoded.userId).select('-password');
     
     if (!user) {
@@ -25,7 +35,7 @@ const protect = asyncHandler(async (req, res, next) => {
   } catch (error) {
     console.error('Token verification failed:', error);
     res.status(401);
-    throw new Error('Not authorized, session expired');
+    throw new Error('Not authorized, token failed');
   }
 });
 

@@ -21,22 +21,34 @@ connectDB();
 
 const app = express();
 
-// Trust proxy for secure cookies in production
-if (process.env.NODE_ENV === 'production') {
-  app.set('trust proxy', 1);
-}
+// Trust proxy for secure cookies
+app.set('trust proxy', 1);
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-// Configure CORS before routes
-app.use(cors({
-  origin: ['http://localhost:3000', 'https://nexusedu5.onrender.com'],
+// CORS configuration
+const corsOptions = {
+  origin: function (origin, callback) {
+    const allowedOrigins = [
+      'http://localhost:3000',
+      'http://localhost:5173',
+      'https://nexusedu5.onrender.com'
+    ];
+    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
-}));
+  exposedHeaders: ['set-cookie']
+};
+
+app.use(cors(corsOptions));
 
 // Session configuration
 const sessionConfig = {
@@ -45,10 +57,11 @@ const sessionConfig = {
   saveUninitialized: false,
   proxy: true,
   cookie: {
+    httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-    maxAge: 24 * 60 * 60 * 1000, // 24 hours
-    domain: process.env.NODE_ENV === 'production' ? '.onrender.com' : undefined
+    maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+    path: '/'
   }
 };
 
