@@ -1,5 +1,9 @@
 import asyncHandler from 'express-async-handler';
 import nodemailer from 'nodemailer';
+import dotenv from 'dotenv';
+
+dotenv.config();
+
 
 // @desc    Send contact form message
 // @route   POST /api/contact

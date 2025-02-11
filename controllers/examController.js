@@ -6,6 +6,9 @@ import sendEmail from '../utils/emailUtils.js';
 import { examResultTemplate } from '../utils/emailTemplates.js';
 import axios from 'axios';
 import { createLogger } from '../utils/logger.js';
+import dotenv from 'dotenv';
+
+dotenv.config();
 
 const logger = createLogger('examController');
 

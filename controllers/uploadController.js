@@ -1,6 +1,10 @@
 import asyncHandler from 'express-async-handler';
 import FileRequest from '../models/fileRequestModel.js';
 import { processFile } from '../utils/encryptionUtils.js';
+import dotenv from 'dotenv';
+
+dotenv.config();
+
 
 // Get institute's uploads
 const getMyUploads = asyncHandler(async (req, res) => {

@@ -4,6 +4,10 @@ import axios from 'axios';
 import FormData from 'form-data';
 import FileRequest from '../models/fileRequestModel.js';
 import { encryptFile, generateEncryptionKey } from '../utils/encryptionUtils.js';
+import dotenv from 'dotenv';
+
+dotenv.config();
+  
 
 // Utility function to process and encrypt file
 const processFile = (buffer) => {

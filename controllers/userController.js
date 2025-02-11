@@ -1,7 +1,7 @@
 import asyncHandler from 'express-async-handler';
 import User from '../models/userModel.js';
 import generateToken from '../utils/generateToken.js';
-import passport from 'passport';
+import passport from '../utils/passport.js';
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
 import dotenv from 'dotenv';
 
@@ -51,29 +51,6 @@ passport.use(
   )
 );
 
-// Google Auth Routes
-const googleAuth = passport.authenticate('google', {
-  scope: ['profile', 'email'],
-  prompt: 'select_account'
-});
-
-const googleAuthCallback = asyncHandler(async (req, res) => {
-  try {
-    if (!req.user) {
-      return res.redirect(`${process.env.FRONTEND_URL}/login?error=auth_failed`);
-    }
-    
-    // Generate token
-    generateToken(res, req.user._id);
-    
-    // Redirect to frontend with success parameter
-    res.redirect(`${process.env.FRONTEND_URL}?loginSuccess=true`);
-  } catch (error) {
-    console.error('Google auth callback error:', error);
-    res.redirect(`${process.env.FRONTEND_URL}/login?error=server_error`);
-  }
-});
-
 // @desc    Auth user & get token
 // @route   POST /api/users/auth
 // @access  Public
@@ -84,7 +61,6 @@ const authUser = asyncHandler(async (req, res) => {
 
   if (user && (await user.matchPassword(password))) {
     generateToken(res, user._id);
-
     res.json({
       _id: user._id,
       name: user.name,
@@ -204,6 +180,52 @@ const updateUserProfile = asyncHandler(async (req, res) => {
     throw new Error('User not found');
   }
 });
+
+// @desc    Google OAuth
+// @route   GET /api/users/auth/google
+// @access  Public
+const googleAuth = passport.authenticate('google', {
+  scope: ['profile', 'email']
+});
+
+// @desc    Google OAuth callback
+// @route   GET /api/users/auth/google/callback
+// @access  Public
+const googleAuthCallback = (req, res, next) => {
+  passport.authenticate('google', async (err, profile) => {
+    if (err) {
+      console.error('Google Auth Error:', err);
+      return res.redirect('http://localhost:3000/login?error=auth_failed');
+    }
+
+    if (!profile) {
+      return res.redirect('http://localhost:3000/login?error=no_profile');
+    }
+
+    try {
+      let user = await User.findOne({ email: profile.email });
+
+      if (!user) {
+        // Create new user if doesn't exist
+        user = await User.create({
+          name: profile.displayName,
+          email: profile.email,
+          password: 'GOOGLE-AUTH-' + Math.random().toString(36).slice(-8),
+          userType: 'student', // Default to student
+        });
+      }
+
+      // Generate token and set cookie
+      generateToken(res, user._id);
+
+      // Redirect to frontend with success
+      res.redirect('http://localhost:3000/dashboard');
+    } catch (error) {
+      console.error('User creation error:', error);
+      res.redirect('http://localhost:3000/login?error=creation_failed');
+    }
+  })(req, res, next);
+};
 
 export {
   authUser,
