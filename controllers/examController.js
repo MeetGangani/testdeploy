@@ -12,6 +12,13 @@ const logger = createLogger('examController');
 // Get available exams for students
 const getAvailableExams = asyncHandler(async (req, res) => {
   try {
+    // Debug logging
+    logger.info('User from request:', req.user);
+    if (!req.user) {
+      logger.error('No user found in request');
+      return res.status(401).json({ message: 'User not authenticated' });
+    }
+
     // Find all approved exams that the student hasn't attempted yet
     const attemptedExams = await ExamResponse.find({ 
       student: req.user._id 
@@ -278,6 +285,13 @@ const releaseResults = asyncHandler(async (req, res) => {
 // Get my results (for student)
 const getMyResults = asyncHandler(async (req, res) => {
   try {
+    // Debug logging
+    logger.info('User from request:', req.user);
+    if (!req.user) {
+      logger.error('No user found in request');
+      return res.status(401).json({ message: 'User not authenticated' });
+    }
+
     logger.info('Fetching results for student:', req.user._id);
     
     const results = await ExamResponse.find({ 
