@@ -4,26 +4,30 @@ import User from '../models/userModel.js';
 
 const protect = asyncHandler(async (req, res, next) => {
   console.log('Cookies received:', req.cookies);
-  let token;
+  let token = req.cookies.jwt;
 
-  token = req.cookies.jwt;
-
-  if (token) {
-    try {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      console.log('Token verified, user ID:', decoded.userId);
-
-      req.user = await User.findById(decoded.userId).select('-password');
-      next();
-    } catch (error) {
-      console.error('Token verification failed:', error);
-      res.status(401);
-      throw new Error('Not authorized, token failed');
-    }
-  } else {
+  if (!token) {
     console.log('No token found in cookies');
     res.status(401);
-    throw new Error('Not authorized, no token');
+    throw new Error('Not authorized, please log in again');
+  }
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    console.log('Token verified, user ID:', decoded.userId);
+
+    req.user = await User.findById(decoded.userId).select('-password');
+    
+    if (!req.user) {
+      res.status(401);
+      throw new Error('User not found');
+    }
+    
+    next();
+  } catch (error) {
+    console.error('Token verification failed:', error);
+    res.status(401);
+    throw new Error('Not authorized, session expired');
   }
 });
 
