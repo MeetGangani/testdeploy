@@ -36,6 +36,7 @@ const corsOptions = {
       'http://localhost:5173',
       'https://nexusedu5.onrender.com'
     ];
+    console.log('Request origin:', origin);
     if (!origin || allowedOrigins.indexOf(origin) !== -1) {
       callback(null, true);
     } else {
