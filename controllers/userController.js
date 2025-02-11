@@ -136,12 +136,24 @@ const registerUser = asyncHandler(async (req, res) => {
 // @route   POST /api/users/logout
 // @access  Public
 const logoutUser = (req, res) => {
+  // Clear the JWT cookie
   res.cookie('jwt', '', {
     httpOnly: true,
-    secure: false,
-    sameSite: 'lax',
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
     expires: new Date(0),
+    path: '/',
   });
+
+  // Clear any session data
+  if (req.session) {
+    req.session.destroy();
+  }
+
+  // Clear any other cookies you might have set
+  res.clearCookie('userInfo');
+  res.clearCookie('.AspNet.Consent');
+
   res.status(200).json({ message: 'Logged out successfully' });
 };
 
