@@ -26,24 +26,10 @@ app.use(express.urlencoded({ extended: true }));
 
 app.use(cookieParser());
 
-app.use((req, res, next) => {
-  const allowedOrigins = ['http://localhost:3000', 'https://nexusedu5.onrender.com'];
-  const origin = req.headers.origin;
-  
-  if (allowedOrigins.includes(origin)) {
-    res.setHeader('Access-Control-Allow-Origin', origin);
-  }
-  
-  res.setHeader('Access-Control-Allow-Credentials', 'true');
-  res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
-  
-  next();
-});
+app.use(cors({
+  origin: ['http://localhost:3000', 'https://nexusedu5.onrender.com'],
+  credentials: true
+}));
 
 const sessionConfig = {
   secret: process.env.SESSION_SECRET,
