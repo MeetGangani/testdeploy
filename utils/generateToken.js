@@ -5,13 +5,18 @@ const generateToken = (res, userId) => {
     expiresIn: '30d',
   });
 
-  // Even though NODE_ENV is 'development', we need secure cookies for deployed backend
+  // Set cookie with correct domain and path
   res.cookie('jwt', token, {
     httpOnly: true,
     secure: true,  // Always true for deployed backend
     sameSite: 'none',  // Required for cross-site cookies
+    domain: '.onrender.com',  // Match your domain
+    path: '/',
     maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
   });
+
+  // Log cookie being set
+  console.log('Setting JWT cookie');
 };
 
 export default generateToken;
