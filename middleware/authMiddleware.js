@@ -29,8 +29,30 @@ const admin = (req, res, next) => {
   }
 };
 
-// Remove role restrictions for now
-const instituteOnly = (req, res, next) => next();
-const studentOnly = (req, res, next) => next();
+const adminOnly = admin; // Alias for backward compatibility
 
-export { protect, admin, instituteOnly, studentOnly };
+const instituteOnly = (req, res, next) => {
+  if (req.user && req.user.userType === 'institute') {
+    next();
+  } else {
+    res.status(401);
+    throw new Error('Not authorized as institute');
+  }
+};
+
+const studentOnly = (req, res, next) => {
+  if (req.user && req.user.userType === 'student') {
+    next();
+  } else {
+    res.status(401);
+    throw new Error('Not authorized as student');
+  }
+};
+
+export { 
+  protect, 
+  admin,
+  adminOnly, // Added this export
+  instituteOnly, 
+  studentOnly 
+};
