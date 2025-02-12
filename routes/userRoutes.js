@@ -30,10 +30,10 @@ router.get('/auth/google',
   })
 );
 
-router.get('/auth/google/callback',
+router.get('/auth/google/callback', 
   passport.authenticate('google', { 
     failureRedirect: '/login?error=auth_failed',
-    session: false
+    session: false 
   }),
   googleAuthCallback
 );

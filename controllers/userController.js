@@ -27,7 +27,9 @@ passport.use(
     {
       clientID: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-      callbackURL: '/api/users/auth/google/callback',
+      callbackURL: process.env.NODE_ENV === 'production'
+        ? 'https://nexusedu5.onrender.com/api/users/auth/google/callback'
+        : 'http://localhost:5000/api/users/auth/google/callback',
       proxy: true
     },
     async (accessToken, refreshToken, profile, done) => {
@@ -93,23 +95,48 @@ const authUser = asyncHandler(async (req, res) => {
 // @route   POST /api/users/register
 // @access  Public
 const registerUser = asyncHandler(async (req, res) => {
-  const { name, email, password } = req.body;
+  const { name, email, password, userType } = req.body;
 
+  if (!name || !email || !password) {
+    res.status(400);
+    throw new Error('Please fill in all required fields');
+  }
+
+  // Check if user exists
   const userExists = await User.findOne({ email });
   if (userExists) {
     res.status(400);
     throw new Error('User already exists');
   }
 
+  // Create user with specified or default userType
   const user = await User.create({
     name,
     email,
     password,
-    userType: 'student' // Default to student
+    userType: userType || 'student' // Use provided userType or default to 'student'
   });
 
   if (user) {
+    // Generate token and set cookie
     generateToken(res, user._id);
+
+    // Set session data
+    req.session.user = {
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      userType: user.userType
+    };
+
+    // Save session
+    req.session.save(err => {
+      if (err) {
+        console.error('Session save error:', err);
+      }
+    });
+
+    // Send response
     res.status(201).json({
       _id: user._id,
       name: user.name,
@@ -213,12 +240,16 @@ const googleAuthCallback = asyncHandler(async (req, res) => {
   const { user } = req;
   
   if (!user) {
-    return res.redirect('/login?error=auth_failed');
+    return res.redirect(
+      process.env.NODE_ENV === 'production'
+        ? 'https://nexusedu5.onrender.com/login?error=auth_failed'
+        : 'http://localhost:3000/login?error=auth_failed'
+    );
   }
 
   generateToken(res, user._id);
 
-  // Redirect based on user type
+  // Redirect based on environment
   const redirectUrl = process.env.NODE_ENV === 'production'
     ? 'https://nexusedu5.onrender.com'
     : 'http://localhost:3000';
