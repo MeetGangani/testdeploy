@@ -241,9 +241,23 @@ const googleAuthCallback = asyncHandler(async (req, res) => {
     return res.redirect('http://localhost:3000/login?error=auth_failed');
   }
 
+  // Generate JWT token and set cookie
   generateToken(res, user._id);
 
-  // Always redirect to local frontend in development
+  // Set user info in a cookie
+  res.cookie('userInfo', JSON.stringify({
+    _id: user._id,
+    name: user.name,
+    email: user.email,
+    userType: user.userType
+  }), {
+    httpOnly: false, // Allow JavaScript access
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+    maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+  });
+
+  // Redirect to frontend with success parameter
   res.redirect('http://localhost:3000?loginSuccess=true');
 });
 
