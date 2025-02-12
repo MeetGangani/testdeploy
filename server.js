@@ -14,6 +14,7 @@ import passport from 'passport';
 import session from 'express-session';
 import User from './models/userModel.js';
 import cors from 'cors';
+import './utils/passport.js'; // Import passport config
 
 dotenv.config();
 
@@ -21,7 +22,7 @@ connectDB();
 
 const app = express();
 
-// Trust proxy for secure cookies
+// Trust proxy for secure cookies in production
 app.set('trust proxy', 1);
 
 app.use(express.json());
@@ -30,43 +31,31 @@ app.use(cookieParser());
 
 // CORS configuration
 const corsOptions = {
-  origin: function (origin, callback) {
-    const allowedOrigins = [
-      'http://localhost:3000',
-      'http://localhost:5173',
-      'https://nexusedu5.onrender.com'
-    ];
-    console.log('Request origin:', origin);
-    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
+  origin: process.env.NODE_ENV === 'production' 
+    ? 'https://nexusedu5.onrender.com'
+    : ['http://localhost:3000', 'http://localhost:5173'],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
-  exposedHeaders: ['set-cookie']
 };
 
 app.use(cors(corsOptions));
 
 // Session configuration
-const sessionConfig = {
-  secret: process.env.SESSION_SECRET || 'abc123',
+app.use(session({
+  secret: process.env.SESSION_SECRET,
   resave: false,
   saveUninitialized: false,
   proxy: true,
   cookie: {
-    httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
     maxAge: 24 * 60 * 60 * 1000, // 24 hours
-    path: '/'
+    httpOnly: true
   }
-};
+}));
 
-app.use(session(sessionConfig));
+// Initialize Passport
 app.use(passport.initialize());
 app.use(passport.session());
 
@@ -90,10 +79,10 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/exams', examRoutes);
 app.use('/api/contact', contactRoutes);
 
+// Serve frontend in production
 if (process.env.NODE_ENV === 'production') {
   const __dirname = path.resolve();
   app.use(express.static(path.join(__dirname, '/frontend/dist')));
-
   app.get('*', (req, res) =>
     res.sendFile(path.resolve(__dirname, 'frontend', 'dist', 'index.html'))
   );
@@ -107,5 +96,4 @@ app.use(notFound);
 app.use(errorHandler);
 
 const port = process.env.PORT || 5000;
-
-app.listen(port, () => console.log(`Server started on port ${port}`));
+app.listen(port, () => console.log(`Server running on port ${port}`));

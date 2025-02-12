@@ -52,21 +52,19 @@ passport.use(
 );
 
 // @desc    Auth user & get token
-// @route   POST /api/users/auth
+// @route   POST /api/users/login
 // @access  Public
 const authUser = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
 
   const user = await User.findOne({ email });
-
   if (user && (await user.matchPassword(password))) {
     generateToken(res, user._id);
-    
     res.json({
       _id: user._id,
       name: user.name,
       email: user.email,
-      userType: user.userType,
+      userType: user.userType
     });
   } else {
     res.status(401);
@@ -74,14 +72,13 @@ const authUser = asyncHandler(async (req, res) => {
   }
 });
 
-// @desc    Register a new user
-// @route   POST /api/users
+// @desc    Register user
+// @route   POST /api/users/register
 // @access  Public
 const registerUser = asyncHandler(async (req, res) => {
-  const { name, email, password, userType } = req.body;
+  const { name, email, password } = req.body;
 
   const userExists = await User.findOne({ email });
-
   if (userExists) {
     res.status(400);
     throw new Error('User already exists');
@@ -91,17 +88,16 @@ const registerUser = asyncHandler(async (req, res) => {
     name,
     email,
     password,
-    userType: userType || 'student', // Default to student if not specified
+    userType: 'student' // Default to student
   });
 
   if (user) {
     generateToken(res, user._id);
-
     res.status(201).json({
       _id: user._id,
       name: user.name,
       email: user.email,
-      userType: user.userType,
+      userType: user.userType
     });
   } else {
     res.status(400);
@@ -180,41 +176,22 @@ const googleAuth = passport.authenticate('google', {
 // @desc    Google OAuth callback
 // @route   GET /api/users/auth/google/callback
 // @access  Public
-const googleAuthCallback = (req, res, next) => {
-  passport.authenticate('google', async (err, profile) => {
-    if (err) {
-      console.error('Google Auth Error:', err);
-      return res.redirect('http://localhost:3000/login?error=auth_failed');
-    }
+const googleAuthCallback = asyncHandler(async (req, res) => {
+  const { user } = req;
+  
+  if (!user) {
+    return res.redirect('/login?error=auth_failed');
+  }
 
-    if (!profile) {
-      return res.redirect('http://localhost:3000/login?error=no_profile');
-    }
+  generateToken(res, user._id);
 
-    try {
-      let user = await User.findOne({ email: profile.email });
+  // Redirect based on user type
+  const redirectUrl = process.env.NODE_ENV === 'production'
+    ? 'https://nexusedu5.onrender.com'
+    : 'http://localhost:3000';
 
-      if (!user) {
-        // Create new user if doesn't exist
-        user = await User.create({
-          name: profile.displayName,
-          email: profile.email,
-          password: 'GOOGLE-AUTH-' + Math.random().toString(36).slice(-8),
-          userType: 'student', // Default to student
-        });
-      }
-
-      // Generate token and set cookie
-      generateToken(res, user._id);
-
-      // Redirect to frontend with success
-      res.redirect('http://localhost:3000/dashboard');
-    } catch (error) {
-      console.error('User creation error:', error);
-      res.redirect('http://localhost:3000/login?error=creation_failed');
-    }
-  })(req, res, next);
-};
+  res.redirect(`${redirectUrl}?loginSuccess=true`);
+});
 
 export {
   authUser,
@@ -223,5 +200,5 @@ export {
   getUserProfile,
   updateUserProfile,
   googleAuth,
-  googleAuthCallback,
+  googleAuthCallback
 };
