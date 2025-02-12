@@ -4,6 +4,7 @@ import generateToken from '../utils/generateToken.js';
 import passport from '../utils/passport.js';
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
 import dotenv from 'dotenv';
+import jwt from 'jsonwebtoken';
 
 dotenv.config();
 
@@ -60,25 +61,28 @@ const authUser = asyncHandler(async (req, res) => {
   const user = await User.findOne({ email });
   
   if (user && (await user.matchPassword(password))) {
-    // Generate JWT token
-    const token = generateToken(res, user._id);
+    // Generate token
+    const token = jwt.sign(
+      { userId: user._id },
+      process.env.JWT_SECRET,
+      { expiresIn: '30d' }
+    );
 
-    // Set cookies
+    // Set cookies with explicit token
     res.cookie('jwt', token, {
       httpOnly: true,
-      secure: true, // Always true since you're using HTTPS
-      sameSite: 'none', // Required for cross-site cookies
+      secure: true,
+      sameSite: 'none',
       maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
-      domain: '.onrender.com'
+      domain: 'onrender.com'
     });
 
-    // Set user session cookie
     res.cookie('userSession', 'active', {
       httpOnly: false,
       secure: true,
       sameSite: 'none',
       maxAge: 30 * 24 * 60 * 60 * 1000,
-      domain: '.onrender.com'
+      domain: 'onrender.com'
     });
 
     res.json({
