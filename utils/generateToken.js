@@ -8,9 +8,19 @@ const generateToken = (res, userId) => {
   // Set JWT as HTTP-Only cookie
   res.cookie('jwt', token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
+    secure: process.env.NODE_ENV === 'production', // Use HTTPS in production
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
     maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+    domain: process.env.NODE_ENV === 'production' ? '.onrender.com' : 'localhost'
+  });
+
+  // Also set a non-httpOnly cookie for client-side access
+  res.cookie('userSession', 'active', {
+    httpOnly: false,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+    maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+    domain: process.env.NODE_ENV === 'production' ? '.onrender.com' : 'localhost'
   });
 };
 

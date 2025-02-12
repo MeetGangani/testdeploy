@@ -15,6 +15,7 @@ import session from 'express-session';
 import User from './models/userModel.js';
 import cors from 'cors';
 import './utils/passport.js'; // Import passport config
+import MongoStore from 'connect-mongo'; // Add this package
 
 dotenv.config();
 
@@ -46,12 +47,16 @@ app.use(session({
   secret: process.env.SESSION_SECRET,
   resave: false,
   saveUninitialized: false,
-  proxy: true,
+  store: MongoStore.create({
+    mongoUrl: process.env.MONGO_URI,
+    ttl: 30 * 24 * 60 * 60 // 30 days
+  }),
   cookie: {
     secure: process.env.NODE_ENV === 'production',
     sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-    maxAge: 24 * 60 * 60 * 1000, // 24 hours
-    httpOnly: true
+    maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+    httpOnly: true,
+    domain: process.env.NODE_ENV === 'production' ? '.onrender.com' : 'localhost'
   }
 }));
 

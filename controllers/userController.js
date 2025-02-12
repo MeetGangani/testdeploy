@@ -59,7 +59,24 @@ const authUser = asyncHandler(async (req, res) => {
 
   const user = await User.findOne({ email });
   if (user && (await user.matchPassword(password))) {
+    // Generate JWT
     generateToken(res, user._id);
+
+    // Set session data
+    req.session.user = {
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      userType: user.userType
+    };
+
+    // Save session
+    req.session.save(err => {
+      if (err) {
+        console.error('Session save error:', err);
+      }
+    });
+
     res.json({
       _id: user._id,
       name: user.name,
@@ -108,16 +125,32 @@ const registerUser = asyncHandler(async (req, res) => {
 // @desc    Logout user
 // @route   POST /api/users/logout
 // @access  Public
-const logoutUser = (req, res) => {
+const logoutUser = asyncHandler(async (req, res) => {
+  // Clear JWT cookie
   res.cookie('jwt', '', {
     httpOnly: true,
     expires: new Date(0),
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+  });
+
+  // Clear session cookie
+  res.cookie('userSession', '', {
+    httpOnly: false,
+    expires: new Date(0),
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+  });
+
+  // Destroy session
+  req.session.destroy((err) => {
+    if (err) {
+      console.error('Session destruction error:', err);
+    }
   });
 
   res.status(200).json({ message: 'Logged out successfully' });
-};
+});
 
 // @desc    Get user profile
 // @route   GET /api/users/profile
