@@ -58,23 +58,27 @@ const authUser = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
 
   const user = await User.findOne({ email });
+  
   if (user && (await user.matchPassword(password))) {
-    // Generate JWT
-    generateToken(res, user._id);
+    // Generate JWT token
+    const token = generateToken(res, user._id);
 
-    // Set session data
-    req.session.user = {
-      _id: user._id,
-      name: user.name,
-      email: user.email,
-      userType: user.userType
-    };
+    // Set cookies
+    res.cookie('jwt', token, {
+      httpOnly: true,
+      secure: true, // Always true since you're using HTTPS
+      sameSite: 'none', // Required for cross-site cookies
+      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+      domain: '.onrender.com'
+    });
 
-    // Save session
-    req.session.save(err => {
-      if (err) {
-        console.error('Session save error:', err);
-      }
+    // Set user session cookie
+    res.cookie('userSession', 'active', {
+      httpOnly: false,
+      secure: true,
+      sameSite: 'none',
+      maxAge: 30 * 24 * 60 * 60 * 1000,
+      domain: '.onrender.com'
     });
 
     res.json({
@@ -241,23 +245,9 @@ const googleAuthCallback = asyncHandler(async (req, res) => {
     return res.redirect('http://localhost:3000/login?error=auth_failed');
   }
 
-  // Generate JWT token and set cookie
   generateToken(res, user._id);
 
-  // Set user info in a cookie
-  res.cookie('userInfo', JSON.stringify({
-    _id: user._id,
-    name: user.name,
-    email: user.email,
-    userType: user.userType
-  }), {
-    httpOnly: false, // Allow JavaScript access
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-    maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
-  });
-
-  // Redirect to frontend with success parameter
+  // Always redirect to local frontend in development
   res.redirect('http://localhost:3000?loginSuccess=true');
 });
 
