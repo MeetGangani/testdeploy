@@ -238,12 +238,13 @@ const googleAuthCallback = asyncHandler(async (req, res) => {
   const { user } = req;
   
   if (!user) {
-    return res.redirect('https://nexusedu5.onrender.com/login?error=auth_failed');
+    return res.redirect('http://localhost:3000/login?error=auth_failed');
   }
 
   generateToken(res, user._id);
 
-  res.redirect('https://nexusedu5.onrender.com?loginSuccess=true');
+  // Always redirect to local frontend in development
+  res.redirect('http://localhost:3000?loginSuccess=true');
 });
 
 export {
