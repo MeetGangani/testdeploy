@@ -27,9 +27,7 @@ passport.use(
     {
       clientID: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-      callbackURL: process.env.NODE_ENV === 'production'
-        ? 'https://nexusedu5.onrender.com/api/users/auth/google/callback'
-        : 'http://localhost:5000/api/users/auth/google/callback',
+      callbackURL: 'https://nexusedu5.onrender.com/api/users/auth/google/callback',
       proxy: true
     },
     async (accessToken, refreshToken, profile, done) => {
@@ -240,21 +238,12 @@ const googleAuthCallback = asyncHandler(async (req, res) => {
   const { user } = req;
   
   if (!user) {
-    return res.redirect(
-      process.env.NODE_ENV === 'production'
-        ? 'https://nexusedu5.onrender.com/login?error=auth_failed'
-        : 'http://localhost:3000/login?error=auth_failed'
-    );
+    return res.redirect('https://nexusedu5.onrender.com/login?error=auth_failed');
   }
 
   generateToken(res, user._id);
 
-  // Redirect based on environment
-  const redirectUrl = process.env.NODE_ENV === 'production'
-    ? 'https://nexusedu5.onrender.com'
-    : 'http://localhost:3000';
-
-  res.redirect(`${redirectUrl}?loginSuccess=true`);
+  res.redirect('https://nexusedu5.onrender.com?loginSuccess=true');
 });
 
 export {
