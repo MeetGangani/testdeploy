@@ -53,7 +53,7 @@ app.use(cors(corsOptions));
 
 // Session configuration
 const sessionConfig = {
-  secret: process.env.SESSION_SECRET,
+  secret: process.env.SESSION_SECRET || 'abc123',
   resave: false,
   saveUninitialized: false,
   proxy: true,
@@ -61,7 +61,7 @@ const sessionConfig = {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-    maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+    maxAge: 24 * 60 * 60 * 1000, // 24 hours
     path: '/'
   }
 };
