@@ -61,6 +61,7 @@ const authUser = asyncHandler(async (req, res) => {
 
   if (user && (await user.matchPassword(password))) {
     generateToken(res, user._id);
+    
     res.json({
       _id: user._id,
       name: user.name,
@@ -90,7 +91,7 @@ const registerUser = asyncHandler(async (req, res) => {
     name,
     email,
     password,
-    userType,
+    userType: userType || 'student', // Default to student if not specified
   });
 
   if (user) {
@@ -108,27 +109,16 @@ const registerUser = asyncHandler(async (req, res) => {
   }
 });
 
-// @desc    Logout user / clear cookie
+// @desc    Logout user
 // @route   POST /api/users/logout
 // @access  Public
 const logoutUser = (req, res) => {
-  // Clear the JWT cookie
   res.cookie('jwt', '', {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
     expires: new Date(0),
-    path: '/',
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
   });
-
-  // Clear any session data
-  if (req.session) {
-    req.session.destroy();
-  }
-
-  // Clear any other cookies you might have set
-  res.clearCookie('userInfo');
-  res.clearCookie('.AspNet.Consent');
 
   res.status(200).json({ message: 'Logged out successfully' });
 };
@@ -161,7 +151,6 @@ const updateUserProfile = asyncHandler(async (req, res) => {
   if (user) {
     user.name = req.body.name || user.name;
     user.email = req.body.email || user.email;
-    user.userType = req.body.userType || user.userType;
 
     if (req.body.password) {
       user.password = req.body.password;

@@ -5,8 +5,6 @@ import {
   logoutUser,
   getUserProfile,
   updateUserProfile,
-  googleAuth,
-  googleAuthCallback,
 } from '../controllers/userController.js';
 import { protect } from '../middleware/authMiddleware.js';
 
@@ -18,17 +16,5 @@ router.post('/logout', logoutUser);
 router.route('/profile')
   .get(protect, getUserProfile)
   .put(protect, updateUserProfile);
-
-// Remove role restrictions from these routes
-router.get('/admin', protect, (req, res) => {
-  res.json({ message: 'Access granted' });
-});
-
-router.get('/institute', protect, (req, res) => {
-  res.json({ message: 'Access granted' });
-});
-
-router.get('/auth/google', googleAuth);
-router.get('/auth/google/callback', googleAuthCallback);
 
 export default router;

@@ -3,42 +3,34 @@ import asyncHandler from 'express-async-handler';
 import User from '../models/userModel.js';
 
 const protect = asyncHandler(async (req, res, next) => {
-  let token;
-  
-  // Check Authorization header first
-  const authHeader = req.headers.authorization;
-  if (authHeader && authHeader.startsWith('Bearer ')) {
-    token = authHeader.split(' ')[1];
-  } else {
-    // Fallback to cookies
-    token = req.cookies.jwt;
-  }
+  let token = req.cookies.jwt;
 
-  if (!token) {
+  if (token) {
+    try {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      req.user = await User.findById(decoded.userId).select('-password');
+      next();
+    } catch (error) {
+      res.status(401);
+      throw new Error('Not authorized, token failed');
+    }
+  } else {
     res.status(401);
     throw new Error('Not authorized, no token');
   }
-
-  try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = await User.findById(decoded.userId).select('-password');
-    
-    if (!req.user) {
-      res.status(401);
-      throw new Error('User not found');
-    }
-
-    next();
-  } catch (error) {
-    console.error('Token verification failed:', error);
-    res.status(401);
-    throw new Error('Not authorized, token failed');
-  }
 });
 
+const admin = (req, res, next) => {
+  if (req.user && req.user.userType === 'admin') {
+    next();
+  } else {
+    res.status(401);
+    throw new Error('Not authorized as admin');
+  }
+};
+
 // Remove role restrictions for now
-const adminOnly = (req, res, next) => next();
 const instituteOnly = (req, res, next) => next();
 const studentOnly = (req, res, next) => next();
 
-export { protect, adminOnly, instituteOnly, studentOnly };
+export { protect, admin, instituteOnly, studentOnly };
