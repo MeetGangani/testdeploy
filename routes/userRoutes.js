@@ -13,12 +13,12 @@ import passport from 'passport';
 const router = express.Router();
 
 // Auth routes
-router.post('register', registerUser);
-router.post('login', authUser);
-router.post('logout', logoutUser);
+router.post('/register', registerUser);
+router.post('/login', authUser);
+router.post('/logout', logoutUser);
 
 // Profile routes
-router.route('profile')
+router.route('/profile')
   .get(protect, getUserProfile)
   .put(protect, updateUserProfile);
 
